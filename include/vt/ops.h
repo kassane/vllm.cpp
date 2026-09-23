@@ -920,6 +920,18 @@ enum class OpId : uint8_t {
   kScaledRmsNorm,
   kSandwichRmsNorm,
   kCompiledGeluErfMul,
+  // k2-horizon softplus attention gate: out[i] = log(1 + exp(x[i])), the raw
+  // stable softplus the reference applies elementwise before its gated
+  // multiply (build_k2horizon.cpp `ggml_softplus` over the `wqkv_gate`
+  // projection). vt had no plain softplus. Appended before kCount so no
+  // existing op's id shifts.
+  kSoftplus,
+  // Plain elementwise multiply, the sibling of kAdd: out[i] = a[i] * b[i] at
+  // a's exact shape (no broadcast). vt had `MulScalar` but no two-tensor
+  // product, which the k2-horizon attention gate
+  // (`context * softplus(gate)`) needs. Appended before kCount so no existing
+  // op's id shifts.
+  kMul,
   kCount
 };
 
@@ -2472,7 +2484,9 @@ using SoftCapFn = void (*)(Queue&, Tensor&, const Tensor&, double);
 using LayerNormFn = void (*)(Queue&, Tensor&, const Tensor&, const Tensor*, const Tensor*,
                              const LayerNormArgs&);
 using ReluFn = void (*)(Queue&, Tensor&, const Tensor&);
+using SoftplusFn = void (*)(Queue&, Tensor&, const Tensor&);
 using AddFn = void (*)(Queue&, Tensor&, const Tensor&, const Tensor&);
+using MulFn = void (*)(Queue&, Tensor&, const Tensor&, const Tensor&);
 using EmbeddingFn = void (*)(Queue&, Tensor&, const Tensor&, const Tensor&);
 using KeepQuantDecodeFn = void (*)(Queue&, Tensor& out, const Tensor& packed);
 using RopeFn = void (*)(Queue&, Tensor&, Tensor&, const Tensor&, const RopeArgs&);
@@ -3771,6 +3785,17 @@ void GeluErf(Queue& q, Tensor& out, const Tensor& x);
 // Computed in f32, rounded on store; `out` may alias `a` (in-place). All of
 // a/b/out f32 or bf16. CPU + CUDA.
 void Add(Queue& q, Tensor& out, const Tensor& a, const Tensor& b);
+
+// out[i] = log(1 + exp(x[i])) — the raw stable softplus, f32 compute rounded
+// on store; `out` may alias `x`. x/out f32 or bf16. CPU. The k2-horizon
+// attention gate applies it to the `wqkv_gate` projection (scaled by LN2
+// around this call) before its gated multiply.
+void Softplus(Queue& q, Tensor& out, const Tensor& x);
+
+// out = a * b, elementwise at a's exact shape (no broadcast — the boring
+// sibling of Add). Computed in f32, rounded on store; `out` may alias `a`.
+// a/b/out f32 or bf16. CPU.
+void Mul(Queue& q, Tensor& out, const Tensor& a, const Tensor& b);
 
 // out[T,H] = table[ids[t], :]; ids i32/i64, bounds-checked; out f32 or bf16.
 // CUDA note (M0.6 decision): ids live on the device, so the CUDA kernel clamps

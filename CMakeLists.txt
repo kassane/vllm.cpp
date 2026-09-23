@@ -1096,6 +1096,10 @@ add_library(vllm STATIC
   src/vllm/model_executor/models/minicpm3.cpp
   src/vllm/model_executor/models/internlm2_registry.cpp
   src/vllm/model_executor/models/internlm2_weights.cpp
+  src/vllm/model_executor/models/k2horizon_gguf_weights.cpp
+  src/vllm/model_executor/models/k2horizon_weights.cpp
+  src/vllm/model_executor/models/k2horizon_forward.cpp
+  src/vllm/model_executor/models/k2horizon_registry.cpp
   src/vllm/model_executor/models/commandr_registry.cpp
   src/vllm/model_executor/models/commandr_weights.cpp
   src/vllm/model_executor/models/commandr.cpp

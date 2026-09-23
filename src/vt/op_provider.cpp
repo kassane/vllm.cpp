@@ -494,6 +494,10 @@ const char* OpNameImpl(OpId op) {
       return "GeluErf";
     case OpId::kAdd:
       return "Add";
+    case OpId::kSoftplus:
+      return "Softplus";
+    case OpId::kMul:
+      return "Mul";
     case OpId::kBatchedMatmul:
       return "BatchedMatmul";
     case OpId::kConcatMlaNopeRope:

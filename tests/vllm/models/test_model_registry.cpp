@@ -84,7 +84,10 @@ TEST_CASE("registry_imports: every registered architecture has a complete factor
   // (is_pooling_model=true) built on a Qwen3.5 dense backbone + PointerHead
   // readout, ported from jaredpalmer/kev. No vLLM registration; ported from
   // scratch against the kev reference implementation.
-  REQUIRE(registrations.size() == 49);
+  // 49 -> 50 on feat(k2-horizon): `K2HorizonForCausalLM`, the first-in-tree
+  // k2-horizon arch — dense GGUF text model, oracle llama-cli, no vLLM
+  // registration upstream.
+  REQUIRE(registrations.size() == 50);
 
   for (const ModelRegistration& registration : registrations) {
     CAPTURE(registration.architecture);
@@ -189,7 +192,7 @@ TEST_CASE("self_registration: every arch self-registers from its own TU") {
   // with the kExampleConfigArchitectures ledger; adding a model appends its two
   // entries here.
   const std::vector<std::string_view> supported = ModelRegistry::SupportedArchs();
-  REQUIRE(supported.size() == 49);
+  REQUIRE(supported.size() == 50);
   CHECK(std::is_sorted(supported.begin(), supported.end()));
   // The full byte-order sequence. Note "MiniCPM3" < "MiniCPMF" and "Phi3" <
   // "PhiF" ('3' 0x33 < 'F' 0x46); "OPT" < "Olmo" ('P' 0x50 < 'l' 0x6C); and among
@@ -223,6 +226,7 @@ TEST_CASE("self_registration: every arch self-registers from its own TU") {
       "GraniteForCausalLM",
       "InternLM2ForCausalLM",
       "InternLM3ForCausalLM",
+      "K2HorizonForCausalLM",
       "KevModel",
       "KimiK3ForConditionalGeneration",
       "KimiLinearForCausalLM",
@@ -743,7 +747,7 @@ TEST_CASE("Qwen3.5 SSM cache dtype accepts upstream torch aliases exactly") {
 TEST_CASE("hf_registry_coverage: every registration has an example config fixture") {
   // C++ fixture registry for the currently implemented subset. Keep this list
   // alias-for-alias with the central ordered table, mirroring HF_EXAMPLE_MODELS.
-  constexpr std::array<std::string_view, 49> kExampleConfigArchitectures{
+  constexpr std::array<std::string_view, 50> kExampleConfigArchitectures{
       "BoundaryExtractor",
       "CohereForCausalLM",
       "CuaS1Forms",
@@ -766,6 +770,7 @@ TEST_CASE("hf_registry_coverage: every registration has an example config fixtur
       "GraniteForCausalLM",
       "InternLM2ForCausalLM",
       "InternLM3ForCausalLM",
+      "K2HorizonForCausalLM",
       "KevModel",
       "KimiK3ForConditionalGeneration",
       "KimiLinearForCausalLM",
@@ -872,8 +877,8 @@ TEST_CASE("raise_for_unsupported: subset default message and order match oracle"
       "'Gemma4ForConditionalGeneration', 'Gemma4UnifiedForConditionalGeneration', 'GemmaForCausalLM', "
       "'Glm4ForCausalLM', 'Glm4MoeLiteForCausalLM', "
       "'Glm5NextForConditionalGeneration', 'GlmMoeDsaForCausalLM', 'GraniteForCausalLM', "
-      "'InternLM2ForCausalLM', 'InternLM3ForCausalLM', 'KevModel', "
-      "'KimiK3ForConditionalGeneration', 'KimiLinearForCausalLM', "
+      "'InternLM2ForCausalLM', 'InternLM3ForCausalLM', 'K2HorizonForCausalLM', "
+      "'KevModel', 'KimiK3ForConditionalGeneration', 'KimiLinearForCausalLM', "
       "'LagunaForCausalLM', 'LayaModel', "
       "'LlamaForCausalLM', 'LlamaModel', "
       "'MiniCPM3ForCausalLM', 'MiniCPMForCausalLM', 'MistralForCausalLM', 'MuseGlimmerForCausalLM', 'MuseGlimmerForConditionalGeneration', "
@@ -898,8 +903,8 @@ TEST_CASE("raise_for_unsupported: subset default message and order match oracle"
       "'Gemma4ForConditionalGeneration', 'Gemma4UnifiedForConditionalGeneration', 'GemmaForCausalLM', "
       "'Glm4ForCausalLM', 'Glm4MoeLiteForCausalLM', "
       "'Glm5NextForConditionalGeneration', 'GlmMoeDsaForCausalLM', 'GraniteForCausalLM', "
-      "'InternLM2ForCausalLM', 'InternLM3ForCausalLM', 'KevModel', "
-      "'KimiK3ForConditionalGeneration', 'KimiLinearForCausalLM', "
+      "'InternLM2ForCausalLM', 'InternLM3ForCausalLM', 'K2HorizonForCausalLM', "
+      "'KevModel', 'KimiK3ForConditionalGeneration', 'KimiLinearForCausalLM', "
       "'LagunaForCausalLM', 'LayaModel', "
       "'LlamaForCausalLM', 'LlamaModel', "
       "'MiniCPM3ForCausalLM', 'MiniCPMForCausalLM', 'MistralForCausalLM', 'MuseGlimmerForCausalLM', 'MuseGlimmerForConditionalGeneration', "

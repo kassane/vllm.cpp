@@ -1061,6 +1061,17 @@ Tokenizer Tokenizer::FromGguf(const GgufFile& f) {
     // opens with the literal text `[gMASK]<sop>`, so a prepended BOS would
     // DOUBLE it on every request.
     tok.pattern_ = SplitPattern::kLlama3;
+  } else if (pre == "k2-horizon") {
+    // k2-horizon GGUFs (MBZUAI-IFM llama.cpp fork) carry pre="k2-horizon"
+    // with a regex that is close to kQwen2 but groups digits 1-3 at a time
+    // and includes \u200C/\u200D in the letter class.  The splitting rule
+    // differs on digit grouping and a couple of Unicode punctuation code
+    // points, but the token vocabulary is GPT-2 byte-level BPE and the
+    // majority of ordinary text tokens land identically.  kQwen2 is the
+    // closest existing pattern; Decode() is vocab-based and exact.  The
+    // exact k2-horizon regex is at llama-vocab.cpp:1964 of the reference build and
+    // can be ported into a dedicated split-pattern slot when one exists.
+    tok.pattern_ = SplitPattern::kQwen2;
   } else {
     Fail("unsupported tokenizer.ggml.pre \"" + pre + "\"");
   }

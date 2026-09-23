@@ -735,6 +735,27 @@ void SoftCapKernel(Queue&, Tensor& out, const Tensor& x, double cap) {
   });
 }
 
+// out[i] = log(1 + exp(x[i])) (f32 compute, out-dtype store). The stable
+// two-branch form avoids exp() overflow for large positive x: for x>0,
+// log(1+e^x) = x + log1p(e^-x); for x<=0, log1p(e^x) is already exact.
+void SoftplusKernel(Queue&, Tensor& out, const Tensor& x) {
+  const int64_t n = x.Numel();
+  ForRows(n, [&](int64_t r0, int64_t r1) {
+  for (int64_t i = r0; i < r1; ++i) {
+    const float v = LoadF32(x, i);
+    StoreF32(out, i, v > 0.0f ? v + std::log1p(std::exp(-v)) : std::log1p(std::exp(v)));
+  }
+  });
+}
+
+// out[i] = a[i] * b[i] (f32 compute, out-dtype store).
+void MulKernel(Queue&, Tensor& out, const Tensor& a, const Tensor& b) {
+  const int64_t n = out.Numel();
+  ForRows(n, [&](int64_t r0, int64_t r1) {
+  for (int64_t i = r0; i < r1; ++i) StoreF32(out, i, LoadF32(a, i) * LoadF32(b, i));
+  });
+}
+
 void MoeSiluMulKernel(Queue&, Tensor& out, const Tensor& gate, const Tensor& up) {
   const int64_t n = out.Numel();
   // Same polarity, same kernel upstream: fused_moe.py's `fused_experts_impl`
@@ -4338,6 +4359,10 @@ struct Registrar {
                reinterpret_cast<void*>(static_cast<MulScalarFn>(&MulScalarKernel)));
     RegisterOp(OpId::kSoftCap, DeviceType::kCPU,
                reinterpret_cast<void*>(static_cast<SoftCapFn>(&SoftCapKernel)));
+    RegisterOp(OpId::kSoftplus, DeviceType::kCPU,
+               reinterpret_cast<void*>(static_cast<SoftplusFn>(&SoftplusKernel)));
+    RegisterOp(OpId::kMul, DeviceType::kCPU,
+               reinterpret_cast<void*>(static_cast<MulFn>(&MulKernel)));
     RegisterOp(OpId::kMoeSiluMul, DeviceType::kCPU,
                reinterpret_cast<void*>(static_cast<MoeSiluMulFn>(&MoeSiluMulKernel)));
     RegisterOp(OpId::kMoeRelu2, DeviceType::kCPU,

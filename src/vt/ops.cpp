@@ -1749,6 +1749,32 @@ void Add(Queue& q, Tensor& out, const Tensor& a, const Tensor& b) {
   reinterpret_cast<AddFn>(GetOp(OpId::kAdd, q.device.type))(q, out, a, b);
 }
 
+void Softplus(Queue& q, Tensor& out, const Tensor& x) {
+  VT_CHECK(out.rank == x.rank, "softplus: out rank must match x");
+  for (int i = 0; i < x.rank; ++i)
+    VT_CHECK(out.shape[i] == x.shape[i], "softplus: out shape must match x");
+  VT_CHECK(IsFloat(x.dtype) && IsOutFloat(out.dtype), "softplus: float in, f32/bf16 out");
+  VT_CHECK(x.IsContiguous() && out.IsContiguous(), "softplus: contiguous required");
+  VT_CHECK(x.device == out.device && x.device == q.device, "softplus: device mismatch");
+  reinterpret_cast<SoftplusFn>(GetOp(OpId::kSoftplus, q.device.type))(q, out, x);
+}
+
+void Mul(Queue& q, Tensor& out, const Tensor& a, const Tensor& b) {
+  VT_CHECK(a.rank >= 1 && out.rank == a.rank, "mul: out rank must match a");
+  for (int i = 0; i < a.rank; ++i)
+    VT_CHECK(out.shape[i] == a.shape[i], "mul: out shape must match a");
+  VT_CHECK(b.rank == a.rank, "mul: b must match a's rank (elementwise, no broadcast)");
+  for (int i = 0; i < a.rank; ++i)
+    VT_CHECK(b.shape[i] == a.shape[i], "mul: b shape must match a");
+  VT_CHECK(IsFloat(a.dtype) && IsFloat(b.dtype) && IsOutFloat(out.dtype),
+           "mul: float in, f32/bf16 out");
+  VT_CHECK(a.IsContiguous() && b.IsContiguous() && out.IsContiguous(),
+           "mul: contiguous required");
+  VT_CHECK(a.device == out.device && b.device == a.device && a.device == q.device,
+           "mul: device mismatch");
+  reinterpret_cast<MulFn>(GetOp(OpId::kMul, q.device.type))(q, out, a, b);
+}
+
 void Embedding(Queue& q, Tensor& out, const Tensor& table, const Tensor& ids) {
   ValidateWeightValues(table, ids, out, q);
   VT_CHECK(table.rank == 2 && ids.rank == 1 && out.rank == 2, "embedding: bad ranks");
